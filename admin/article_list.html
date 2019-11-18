@@ -13,6 +13,12 @@
     <script src="./libs/jquery-1.12.4.min.js"></script>
     <!-- 引入模板引擎js文件 -->
     <script src="./libs/template-web.js"></script>
+    <!-- 引入Ajax请求地址文件 -->
+    <script src="./libs/http.js"></script>
+    <!-- 引入分页插件twbsPagination.js-->
+    <script src="libs/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./libs/jquery.twbsPagination.js"></script>
+
 </head>
 
 <body>
@@ -71,7 +77,111 @@
             <div class="row text-center">
             </div>
         </div>
+        <div class="row text-center">
+            <!-- 分页插件的结构 -->
+            <ul id="pagination-demo" class="pagination-sm"></ul>
+            <!-- <p>没有数据</p>  -->
+        </div>
     </div>
+
+    <!-- 创建文章类别模板 -->
+    <script id="art_sort" type="text/html">
+        <option value="">所有分类</option>
+        {{each data v}}
+        <option value={{v.id}}>{{v.name}}</option>
+        {{/each}}
+    </script>
+
+    <!-- 创建文章内容模板 -->
+    <script id="art_content" type="text/html">
+        {{each data.data v}}
+        <tr>
+            <td>{{v.title}}</td>
+            <td>{{v.author}}</td>
+            <td>{{v.category}}</td>
+            <td class="text-center">{{v.date}}</td>
+            <td class="text-center">{{v.state}}</td>
+            <td class="text-center">
+                <!-- 将id附带在 a 标签地址上,用于编辑时获取数据  -->
+                <a href="article_edit.html?id={{v.id}}" class="btn btn-default btn-xs">编辑</a>
+                <a href="javascript:void(0);" class="btn btn-danger btn-xs delete">删除</a>
+            </td>
+        </tr>
+        {{/each}}
+    </script>
+
+    <script>
+        $(function () {
+            // 发送ajax请求,获取文章类别
+            $.ajax({
+                type: 'get',
+                url: BigNew.category_list,
+                success: function (backData) {
+                    // console.log(backData);
+                    var resHtml = template('art_sort', backData);
+                    $('#selCategory').html(resHtml);
+                }
+            })
+
+            // ------------------------------------------
+
+
+            
+            // 发送ajax请求,获取文章内容(封装成函数比较好)
+            function getData(type, state) {
+                $.ajax({
+                    type: 'get',
+                    url: BigNew.article_query,
+                    data: {
+                        type: type,
+                        state: state,
+                        page: myTotalPages,
+                        perpage: 8
+                    },
+                    success: function (backData) {
+                        
+                        // console.log(myTotalPages);
+                        // console.log(backData);
+                        if (backData.code == 200) {
+                            var resHtml = template('art_content', backData);
+                            $('tbody').html(resHtml)
+                            callback(backData)
+                        }
+                    }
+                })
+            }
+
+            getData(1, function (backData) {
+                $('#pagination-demo').twbsPagination({
+                    totalPages: backData.data.totalPage,
+                    visiblePages: 7,
+                    first: '首页',
+                    prev: '上一页',
+                    next: '下一页',
+                    last: '尾页',
+                    onPageClick: function (page) {
+                        // myTotalPages = page;
+                        console.log(page); //当前点击的页数.
+                    }
+                });
+            })
+
+
+            // 给筛选按钮注册点击事件,根据条件筛选
+
+            $('#btnSearch').on('click', function (e) {
+                // 阻止form表单内默认提交事件
+                e.preventDefault();
+                var type = $('#selCategory').val();
+                var state = $('#selStatus').val();
+                getData(type, state)
+            })
+
+
+
+
+        })
+    </script>
 </body>
 
 </html>
