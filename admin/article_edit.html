@@ -10,10 +10,21 @@
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/iconfont.css">
     <link rel="stylesheet" href="css/main.css">
+    <!-- 引入时间插件样式 -->
+    <link rel="stylesheet" href="./css/jedate.css">
+    <link rel="stylesheet" href="./css/jeDate-test.css">
     <!-- jq -->
     <script src="./libs/jquery-1.12.4.min.js"></script>
     <!-- 模板引擎 -->
     <script src="./libs/template-web.js"></script>
+    <!-- 引入请求地址http文件 -->
+    <script src="./libs/http.js"></script>
+    <!-- 引入时间插件 jedate.min.js 文件 -->
+    <script src="./libs/jedate.min.js"></script>
+    <!-- 引入文本编辑器 wangEditor.min.js 文件 -->
+    <script src="./libs/wangEditor.min.js"></script>
+
+
 </head>
 
 <body>
@@ -25,7 +36,7 @@
             <form class="form-horizontal article_form" id="form">
                 <div class="form-group">
                     <label for="inputTitle" class="col-sm-2 control-label">文章标题：</label>
-                    <div class="col-sm-10">
+                    <div class="col-sm-6">
                         <input type="text" name="title" class="form-control title" id="inputTitle" value="文章标题文字">
                     </div>
                 </div>
@@ -38,7 +49,7 @@
                 </div>
                 <div class="form-group">
                     <label for="inputCategory" class="col-sm-2 control-label">文章类别：</label>
-                    <div class="col-sm-4">
+                    <div class="col-sm-2">
                         <select class="form-control category" name="categoryId">
                             <option>类别一</option>
                             <option>类别二</option>
@@ -50,12 +61,19 @@
                 </div>
                 <div class="form-group">
                     <label class="col-sm-2 control-label">发布时间：</label>
-                    <div class="col-sm-4">
+                    <div class="col-sm-10">
+                        <div class="jeitem jeinpbox">
+                            <input type="text" class="jeinput" id="testico" name="date">
+                            <div class="icons jebtns"
+                                onclick="jeDate('#testico',{trigger:false,format: 'YYYY-MM-DD',zIndex: 20999})">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputEmail3" class="col-sm-2 control-label">文章内容：</label>
-                    <div class="col-sm-10">
+                    <div class="col-sm-6" id="editor">
+                        <p> <b>黑马程序员</b> 成就IT黑马</p>
                     </div>
                 </div>
                 <div class="form-group">
@@ -67,6 +85,138 @@
             </form>
         </div>
     </div>
+
+
+    <!-- 创建文章类别模板 -->
+    <script id="art_sort" type="text/html">
+        {{each data v}}
+        <option value={{v.id}}>{{v.name}}</option>
+        {{/each}}
+    </script>
+
+    <script>
+        $(function () {
+            // ===============================================
+            // 设置图片预览显示 
+            $('#inputCover').on('change', function (e) {
+                // 阻止默认跳转事件
+                e.preventDefault();
+                // 得到改变后的文件
+                var fileIcon = this.files[0];
+                // console.log(fileIcon);
+                // 将改变后的文件设置成地址
+                var url = URL.createObjectURL(fileIcon);
+                // 改变图片地址,达到预览效果
+                $(this).prev().attr('src', url);
+            })
+            // ===============================================
+            // 获得所有文章类别,显示在下拉框中
+            $.ajax({
+                type: 'get',
+                url: BigNew.category_list,
+                success: function (backData) {
+                    // console.log(backData);
+                    var resHtml = template('art_sort', backData);
+                    $('.category').html(resHtml);
+                }
+            })
+            // ===============================================
+            // 设置时间插件
+            jeDate("#testico", {
+                zIndex: 20999,
+                format: "YYYY-MM-DD",
+                isTime: false,
+                minDate: "2014-09-19 00:00:00"
+            });
+
+
+            // ===============================================
+            // 文本编辑器
+            var E = window.wangEditor
+            var editor = new E('#editor')
+            // 或者 var editor = new E( document.getElementById('editor') )
+            editor.create()
+
+
+            // ===============================================
+            // 获得编辑项id
+            var articleId = window.location.search.split("=")[1];
+            // console.log(articleId);
+
+            // 发送ajax请求,将真实的相关信息显示在页面
+            $.ajax({
+                type: 'get',
+                url: BigNew.article_search,
+                data: {
+                    id: articleId,
+                },
+                success: function (backData) {
+                    console.log(backData);
+                    $('#inputTitle').val(backData.data.title);
+                    $('.article_cover').attr('src', backData.data.cover);
+                    editor.txt.html(backData.data.content);
+                    $('.jeinput').val(backData.data.date)
+                }
+            });
+
+            // ===============================================
+            // 给修改按钮注册修改事件
+
+            $('.btn-edit').on('click', function (e) {
+                // 阻止默认跳转
+                e.preventDefault();
+                // FormData方式提交数据比较方便
+                var fd = new FormData($('form')[0]);
+                // 表达里面没有的数据需要手动添加
+                fd.append("id", articleId);
+                fd.append("content", editor.txt.text());
+                fd.append("state", "已发布");
+
+                // 发送ajax请求(修改)
+                $.ajax({
+                    type: 'post',
+                    url: BigNew.article_edit,
+                    data: fd,
+                    contentType: false,
+                    processData: false,
+                    success: function (backData) {
+                        // console.log(backData);
+                        if (backData.code == 200) {
+                            alert('修改成功');
+                        }
+                    }
+                });
+            })
+            // ===============================================
+            // 给存草稿按钮注册事件
+
+            $('.btn-draft').on('click', function (e) {
+                // 阻止默认跳转
+                e.preventDefault();
+                // FormData方式提交数据比较方便
+                var fd = new FormData($('form')[0]);
+                // 表达里面没有的数据需要手动添加
+                fd.append("id", articleId);
+                fd.append("content", editor.txt.text());
+                fd.append("state", "");
+
+                // 发送ajax请求(修改)
+                $.ajax({
+                    type: 'post',
+                    url: BigNew.article_edit,
+                    data: fd,
+                    contentType: false,
+                    processData: false,
+                    success: function (backData) {
+                        // console.log(backData);
+                        if (backData.code == 200) {
+                            alert('存稿成功');
+                        }
+                    }
+                });
+            })
+        })
+    </script>
 </body>
 
 </html>

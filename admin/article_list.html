@@ -122,7 +122,6 @@
                     $('#selCategory').html(resHtml);
                 }
             })
-
             // --------------------------------------------------------
             // 定义一个变量,作为当前要显示的那一页
             var myPages = 1;
@@ -148,17 +147,14 @@
                                 $('#pagination-demo').next().hide(); //显示没有数据
                                 $('#pagination-demo').show(); //页码插件显示
                                 callback(backData);
-
                             } else if (backData.data.data.length == 0) {
                                 $('#pagination-demo').next().show(); //显示没有数据
                                 $('#pagination-demo').hide(); //页码插件隐藏
-
                             }
                         };
                     }
                 })
             };
-
             // 调用获取文章函数
             getData(myPages, function (backData) {
                 // 内容底部页码显示
@@ -177,8 +173,6 @@
                     }
                 });
             })
-
-
             // 给筛选按钮注册点击事件,根据条件筛选加载数据
             $('#btnSearch').on('click', function (e) {
                 // 阻止form表单内默认提交事件
@@ -191,11 +185,9 @@
                         backData.data.totalPage, 1);
                 });
             })
-
             // 给删除按钮注册事件
             $('tbody').on('click', '.delete', function () {
                 // console.log($(this).attr('data-id'));
-
                if(confirm('真的要删除吗?')){
                 $.ajax({
                     type: 'post',
